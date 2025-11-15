@@ -10,8 +10,17 @@ from src import (
     gradient_descent, adagrad, newton_method, bfgs, subgradient_lasso,
     gd_exact_linesearch_quadratic, ewma_sequence, lagrange_equality_solver, kkt_check
 )
-
 st.set_page_config(layout="wide", page_title="Optimization Visualizer")
+
+# Custom CSS to fix sidebar width
+st.markdown("""
+    <style>
+        [data-testid="stSidebar"] {
+            min-width: 450;
+            max-width: 450;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # Dynamic title based on selected algorithm and problem
 st.title("Gradient Descent Optimizer Visualizer")
