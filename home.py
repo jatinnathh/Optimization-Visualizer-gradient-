@@ -144,6 +144,9 @@ metric2 = stats_col2.empty()
 metric3 = stats_col3.empty()
 metric4 = stats_col4.empty()
 
+# Add placeholder for live gradient display
+grad_display_col = st.empty()
+
 traj_col = st.empty()
 table_col = st.empty()
 
@@ -159,14 +162,43 @@ if st.session_state.is_running:
                 W_final = np.linalg.pinv(X_aug.T @ X_aug) @ (X_aug.T @ y)
                 loss_final, grad_final, _ = mse_loss(W_final, X_aug, y)
                 loss_init, grad_init, _ = mse_loss(W0, X_aug, y)
+                grad_init_norm = np.linalg.norm(grad_init)
+                grad_final_norm = np.linalg.norm(grad_final)
                 history = [
-                    (0, loss_init, grad_init, W0.copy()),
-                    (1, loss_final, grad_final, W_final.copy())
+                    (0, loss_init, grad_init_norm, W0.copy()),
+                    (1, loss_final, grad_final_norm, W_final.copy())
                 ]
                 st.session_state.history = history
                 st.session_state.is_running = False
+                
+                with progress_placeholder.container():
+                    st.success("Closed-Form Solution Computed!")
+                
+                # Display solution
+                with loss_chart.container():
+                    st.write("**Closed-Form (Normal Equation) Solution**")
+                    st.write(f"Initial Loss: {loss_init:.6f}")
+                    st.write(f"Final Loss: {loss_final:.6f}")
+                    st.write(f"Loss Reduction: {((loss_init - loss_final) / loss_init * 100):.2f}%")
+                    st.write(f"Initial Gradient Norm: {grad_init_norm:.6e}")
+                    st.write(f"Final Gradient Norm: {grad_final_norm:.6e}")
+                    st.write(f"**Final Parameters:** {np.round(W_final, 4)}")
+                
+                with grad_chart.container():
+                    fig, ax = plt.subplots(figsize=(8, 5))
+                    iterations = [0, 1]
+                    losses = [loss_init, loss_final]
+                    ax.bar(iterations, losses, color=['#ff7f0e', '#2ca02c'], width=0.3)
+                    ax.set_xlabel("Step")
+                    ax.set_ylabel("Loss")
+                    ax.set_title("Closed-Form Solution Convergence")
+                    ax.set_xticks(iterations)
+                    ax.set_xticklabels(["Initial", "Final"])
+                    ax.grid(True, alpha=0.3, axis='y')
+                    st.pyplot(fig, use_container_width=True)
             else:
                 st.error("Closed-form solution only works for Linear Regression (MSE)")
+                st.session_state.is_running = False
         
         elif algo == "GD (Exact Line Search)":
             if problem == "Linear Regression (MSE)":
@@ -226,6 +258,12 @@ if st.session_state.is_running:
                 with metric4.container():
                     st.metric("Gradient Norm", f"{gnorm:.6e}")
                 
+                # Display live gradient vector
+                with grad_display_col.container():
+                    st.write("**Current Gradient Vector:**")
+                    grad_str = "[" + ", ".join([f"{g:.6e}" for g in grad[:min(5, len(grad))]]) + ("..." if len(grad) > 5 else "") + "]"
+                    st.code(grad_str, language="python")
+                
                 # Check for convergence
                 if gnorm < 1e-6:
                     progress_placeholder.info("Converged!")
@@ -282,6 +320,12 @@ if st.session_state.is_running:
                 with metric4.container():
                     st.metric("Gradient Norm", f"{gnorm:.6e}")
                 
+                # Display live gradient vector
+                with grad_display_col.container():
+                    st.write("**Current Gradient Vector:**")
+                    grad_str = "[" + ", ".join([f"{g:.6e}" for g in grad[:min(5, len(grad))]]) + ("..." if len(grad) > 5 else "") + "]"
+                    st.code(grad_str, language="python")
+                
                 if gnorm < 1e-6:
                     progress_placeholder.info("Converged!")
                     break
@@ -337,6 +381,12 @@ if st.session_state.is_running:
                     st.metric("Loss Reduction", f"{((losses[0] - loss) / losses[0] * 100):.2f}%")
                 with metric4.container():
                     st.metric("Gradient Norm", f"{gnorm:.6e}")
+                
+                # Display live gradient vector
+                with grad_display_col.container():
+                    st.write("**Current Gradient Vector:**")
+                    grad_str = "[" + ", ".join([f"{g:.6e}" for g in grad[:min(5, len(grad))]]) + ("..." if len(grad) > 5 else "") + "]"
+                    st.code(grad_str, language="python")
                 
                 if gnorm < 1e-6:
                     progress_placeholder.info("Converged!")
@@ -406,6 +456,12 @@ if st.session_state.is_running:
                 with metric4.container():
                     st.metric("Gradient Norm", f"{gnorm:.6e}")
                 
+                # Display live gradient vector
+                with grad_display_col.container():
+                    st.write("**Current Gradient Vector:**")
+                    grad_str = "[" + ", ".join([f"{g:.6e}" for g in grad[:min(5, len(grad))]]) + ("..." if len(grad) > 5 else "") + "]"
+                    st.code(grad_str, language="python")
+                
                 if gnorm < 1e-8:
                     progress_placeholder.info("Converged!")
                     break
@@ -461,6 +517,12 @@ if st.session_state.is_running:
                     st.metric("Loss Reduction", f"{((losses[0] - loss) / losses[0] * 100):.2f}%")
                 with metric4.container():
                     st.metric("Gradient Norm", f"{gnorm:.6e}")
+                
+                # Display live gradient vector
+                with grad_display_col.container():
+                    st.write("**Current Gradient Vector:**")
+                    grad_str = "[" + ", ".join([f"{g:.6e}" for g in grad[:min(5, len(grad))]]) + ("..." if len(grad) > 5 else "") + "]"
+                    st.code(grad_str, language="python")
                 
                 if gnorm < 1e-10:
                     progress_placeholder.info("Converged!")
@@ -526,6 +588,12 @@ if st.session_state.is_running:
                     st.metric("Loss Reduction", f"{((losses[0] - loss) / losses[0] * 100):.2f}%")
                 with metric4.container():
                     st.metric("Gradient Norm", f"{gnorm:.6e}")
+                
+                # Display live gradient vector
+                with grad_display_col.container():
+                    st.write("**Current Gradient Vector:**")
+                    grad_str = "[" + ", ".join([f"{g:.6e}" for g in grad[:min(5, len(grad))]]) + ("..." if len(grad) > 5 else "") + "]"
+                    st.code(grad_str, language="python")
                 
                 if gnorm < 1e-8:
                     progress_placeholder.info("Converged!")
@@ -599,6 +667,12 @@ if st.session_state.is_running:
                 with metric4.container():
                     st.metric("Gradient Norm", f"{gnorm:.6e}")
                 
+                # Display live gradient vector (subgradient)
+                with grad_display_col.container():
+                    st.write("**Current Subgradient Vector:**")
+                    grad_str = "[" + ", ".join([f"{g:.6e}" for g in full_sub[:min(5, len(full_sub))]]) + ("..." if len(full_sub) > 5 else "") + "]"
+                    st.code(grad_str, language="python")
+                
                 if gnorm < 1e-8:
                     progress_placeholder.info("Converged!")
                     break
@@ -644,8 +718,134 @@ if st.session_state.is_running:
             
             st.session_state.is_running = False
         
-        else:
-            st.info("Select an algorithm and click 'Start Optimization' to begin!")
+        elif algo == "Lagrange Multiplier":
+            # Generate random ellipse constraint: a*x^2/b^2 + c*y^2/d^2 = 1
+            a_coeff = np.random.uniform(4, 12)
+            b_coeff = np.random.uniform(2, 6)
+            a_inv = 1.0 / a_coeff
+            b_inv = 1.0 / b_coeff
+            
+            def f(x):
+                return -(x[0]*x[1])
+            def grad_f(x):
+                return np.array([-x[1], -x[0]])
+            def h(x):
+                return a_inv * (x[0]**2) + b_inv * (x[1]**2) - 1
+            def grad_h(x):
+                return np.array([2*a_inv*x[0], 2*b_inv*x[1]])
+            
+            # Generate starting point on the constraint
+            theta0 = np.pi / 4
+            x0_lag = np.array([np.sqrt(a_coeff)*np.cos(theta0), np.sqrt(b_coeff)*np.sin(theta0)])
+            xopt, lam_opt = lagrange_equality_solver(None, grad_f, h, grad_h, x0_lag, lam0=0.0, verbose=False)
+            
+            with progress_placeholder.container():
+                st.success("Lagrange Multiplier Solution Found!")
+            
+            with loss_chart.container():
+                st.write(f"**Problem:** Maximize x·y subject to x²/{a_coeff:.2f} + y²/{b_coeff:.2f} = 1")
+                st.write(f"**Optimal Point:** x = {np.round(xopt, 4)}")
+                st.write(f"**Lagrange Multiplier:** λ = {lam_opt:.6f}")
+                st.write(f"**Optimal Value:** f(x) = {-f(xopt):.6f}")
+            
+            with grad_chart.container():
+                fig, ax = plt.subplots(figsize=(8, 8))
+                theta = np.linspace(0, 2*np.pi, 100)
+                x_ellipse = np.sqrt(a_coeff) * np.cos(theta)
+                y_ellipse = np.sqrt(b_coeff) * np.sin(theta)
+                ax.plot(x_ellipse, y_ellipse, 'b-', linewidth=2, label='Constraint')
+                ax.plot(xopt[0], xopt[1], 'r*', markersize=20, label='Optimum')
+                ax.set_xlabel("x", fontsize=12)
+                ax.set_ylabel("y", fontsize=12)
+                ax.set_title("Constrained Optimization with Random Constraint", fontsize=14, fontweight='bold')
+                ax.grid(True, alpha=0.3)
+                ax.axis('equal')
+                ax.legend()
+                st.pyplot(fig, use_container_width=True)
+            
+            st.session_state.is_running = False
+        
+        elif algo == "KKT Conditions":
+            def f(x): 
+                return x[0]**2 + x[1]**2
+            def f_grad(x): 
+                return np.array([2*x[0], 2*x[1]])
+            def g1(x): 
+                return x[0] + x[1] - 1
+            def g1_grad(x): 
+                return np.array([1.0, 1.0])
+            
+            # Find optimal point by solving the KKT system
+            # For this problem, optimal is where gradient = lambda * g1_grad
+            # 2*x = lambda * [1, 1], so x = lambda/2 * [1, 1]
+            # Constraint: x1 + x2 = 1, so 2*(lambda/2) = 1, lambda = 1, x = [0.5, 0.5]
+            x_kkt = np.array([0.5, 0.5])
+            
+            # Compute the required lambda for KKT
+            grad_f = f_grad(x_kkt)
+            grad_g = g1_grad(x_kkt)
+            # grad_f = lambda * grad_g => lambda = grad_f[0] / grad_g[0]
+            lam_kkt = grad_f[0] / grad_g[0] if grad_g[0] != 0 else 0
+            lambdas = [lam_kkt]
+            mus = []
+            
+            # Check KKT conditions
+            station, primal_ok, dual_ok, cs_ok = kkt_check(
+                f_grad, [g1_grad], [], x_kkt, lambdas, mus
+            )
+            
+            with progress_placeholder.container():
+                st.success("KKT Analysis Complete!")
+            
+            with loss_chart.container():
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write("**Problem:** minimize x₁² + x₂² subject to x₁ + x₂ ≤ 1")
+                    st.write(f"**Optimal Point:** x = {np.round(x_kkt, 4)}")
+                    st.write(f"**Optimal Value:** f(x) = {f(x_kkt):.6f}")
+                    st.write(f"**Lagrange Multiplier:** λ = {lam_kkt:.6f}")
+                
+                with col2:
+                    st.write("**KKT Conditions Verification:**")
+                    status_symbol = lambda x: "✓ Pass" if x else "✗ Fail"
+                    st.write(f"- Stationarity: {status_symbol(station)}")
+                    st.write(f"- Primal Feasibility: {status_symbol(primal_ok)}")
+                    st.write(f"- Dual Feasibility: {status_symbol(dual_ok)}")
+                    st.write(f"- Complementary Slackness: {status_symbol(cs_ok)}")
+            
+            with grad_chart.container():
+                fig, ax = plt.subplots(figsize=(8, 8))
+                # Create contour plot of objective
+                x_range = np.linspace(-0.5, 1.5, 100)
+                y_range = np.linspace(-0.5, 1.5, 100)
+                X, Y = np.meshgrid(x_range, y_range)
+                Z = X**2 + Y**2
+                
+                contour = ax.contour(X, Y, Z, levels=15, colors='gray', alpha=0.3)
+                ax.clabel(contour, inline=True, fontsize=8)
+                
+                # Constraint line
+                x_constraint = np.linspace(-0.5, 1.5, 100)
+                y_constraint = 1 - x_constraint
+                ax.plot(x_constraint, y_constraint, 'b-', linewidth=2, label='Constraint: x₁+x₂=1')
+                
+                # Feasible region
+                y_feasible = 1 - x_constraint
+                ax.fill_between(x_constraint, y_feasible, -0.5, alpha=0.1, color='blue', label='Feasible Region')
+                
+                # Optimal point
+                ax.plot(x_kkt[0], x_kkt[1], 'r*', markersize=25, label='Optimum', zorder=5)
+                
+                ax.set_xlabel("x₁", fontsize=12)
+                ax.set_ylabel("x₂", fontsize=12)
+                ax.set_title("KKT Constrained Optimization", fontsize=14, fontweight='bold')
+                ax.legend(loc='upper right')
+                ax.grid(True, alpha=0.3)
+                ax.set_xlim(-0.5, 1.5)
+                ax.set_ylim(-0.5, 1.5)
+                st.pyplot(fig, use_container_width=True)
+            
+            st.session_state.is_running = False
     
     except Exception as e:
         st.error(f"Error: {str(e)}")
@@ -669,6 +869,24 @@ else:
             if max(losses) > 0:
                 ax.set_yscale('log')
             st.pyplot(fig, use_container_width=True)
+            
+            # Display gradient values below loss chart
+            if history:
+                st.write("**Gradient Vector at Final Iteration:**")
+                final_grad = history[-1][3]  # Get parameters (not gradient, but we can show them)
+                if algo not in ["EWMA Smoothing", "Lagrange Multiplier", "KKT Conditions"]:
+                    # Compute final gradient
+                    if problem == "Linear Regression (MSE)":
+                        _, final_grad_vec, _ = mse_loss(history[-1][3], X_aug, y)
+                    else:
+                        _, final_grad_vec, _ = logistic_loss(history[-1][3], X_aug, y)
+                    
+                    col1, col2 = st.columns([1, 2])
+                    with col1:
+                        st.write("Gradient components:")
+                    with col2:
+                        grad_str = "[" + ", ".join([f"{g:.6e}" for g in final_grad_vec[:min(5, len(final_grad_vec))]]) + ("..." if len(final_grad_vec) > 5 else "") + "]"
+                        st.code(grad_str, language="python")
         
         with grad_chart.container():
             fig, ax = plt.subplots(figsize=(10, 5))
@@ -680,6 +898,10 @@ else:
             if max(grad_norms) > 0:
                 ax.set_yscale('log')
             st.pyplot(fig, use_container_width=True)
+            
+            # Display gradient norm value
+            if history:
+                st.write(f"**Final Gradient Norm:** {history[-1][2]:.6e}")
     else:
         with loss_chart.container():
             st.info("Click 'Start Optimization' to begin training")

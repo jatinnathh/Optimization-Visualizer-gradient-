@@ -277,8 +277,14 @@ def kkt_check(f_grad, g_list, h_list, x, lambdas, mus, tol=1e-6):
     # primal feasibility:
     primal_ok = True
     for g in g_list:
-        if (g(x) > tol).any():
-            primal_ok = False
+        g_val = g(x)
+        # Handle both scalar and array returns
+        if isinstance(g_val, np.ndarray):
+            if np.any(g_val > tol):
+                primal_ok = False
+        else:
+            if g_val > tol:
+                primal_ok = False
     for h in h_list:
         if abs(h(x)) > tol:
             primal_ok = False
